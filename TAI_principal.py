@@ -2,12 +2,10 @@ from TAI_classes1 import UsuarioAdm, Livro,  Genero, Emprestimo, Fornecedor, Usu
 
 from flask import Flask 
 from flask import request
-from flask import jsonify 
+from flask import Response 
+from flask import jsonify
 
-#curl -X POST http://127.0.0.1:5000/adm/add -H "Content-Type: application/json" -d "{\"cpf\":\"11111111111\",\"nome\":\"fulano\",\"nome_usu\":\"fulano67\",\"data_nasc\":\"06071967\",\"ende\":\"casa\",\"email\":\"gmail\",\"senha\":\"1234\"}"
-#curl http://127.0.0.1:5000/adm
-
-app = Flask("meu site")
+app = Flask("OpenBook ALPHA")
 
 fornecedores = []
 livros = []
@@ -16,126 +14,309 @@ emprestimos = []
 administradores = []
 clientes = []
 
+
+#Rota para listar administradores
+@app.route("/adm")
+def adm():
+    lista = []
+    for f in administradores:
+        lista.append (f.to_dict())
+    return jsonify(lista)
+
+
+#Rota para adicionar administradores
 @app.route("/adm/add", methods=["POST"])
-def post_pessoa():
+def post_adm():
     cpf=request.json["cpf"]
-    nome=request.json["nome"]
-    nome_usu=request.json["nome_usu"]
+    nome_completo=request.json["nome_completo"]
+    nome_usuario=request.json["nome_usuario"]
     data_nasc=request.json["data_nasc"]
-    ende=request.json["ende"]
+    endereco=request.json["endereco"]
     email=request.json["email"]
     senha=request.json["senha"]
 
-    novo_adm = UsuarioAdm(cpf,nome,nome_usu,data_nasc,ende,email,senha)
+    novo_adm = UsuarioAdm(cpf,nome_completo,nome_usuario,data_nasc,endereco,email,senha)
     administradores.append(novo_adm)
     
-    return "cadastrado com sucesso!"
-
-@app.route("/adm")
-def adm():
-    lista = ""
-    for f in administradores:
-        lista += f"{f}"
-    return f"Esses são os administradores:{lista}"
+    return Response("cadastrado com sucesso!", 201)
 
 
+#Rota para remover administradores
+@app.route("/adm/del", methods=["DELETE"])
+def remov_adm():
 
-@app.route("/forn/add", methods=["POST"])
-def post_pessoa():
-    razao=request.json["razao"]
-    cnpj=request.json["cnpj"]
-    tele=request.json["tele"]
-    email=request.json["email"]
+    cpf=str(request.json["cpf"])
 
-    novo_forn = UsuarioAdm(razao,cnpj,tele,email)
-    fornecedores.append(novo_forn)
-    
-    return "cadastrado com sucesso!"
+    for i in administradores:
+        if str(i.cpf) == cpf:         
+            administradores.remove(i)
+            return Response("Removido com sucesso!", 200)
+       
+    return Response("Usuário não encontrado.", 404)
 
+
+#Rota para listar fornecedores
 @app.route("/forn")
 def forn():
-    lista = ""
+    lista = []
     for f in fornecedores:
-        lista += f"{f}"
-    return f"Esses são os fornecedores:{lista}"
+        lista.append (f.to_dict())
+    return jsonify(lista)
 
+
+#Rota para adicionar fornecedores
+@app.route("/forn/add", methods=["POST"])
+def post_forn():
+    razao_social=request.json["razao_social"]
+    cnpj=request.json["cnpj"]
+    telefone=request.json["telefone"]
+    email=request.json["email"]
+
+    novo_forn = Fornecedor(razao_social,cnpj,telefone,email)
+    fornecedores.append(novo_forn)
+    
+    return Response ("cadastrado com sucesso!",201)
+
+
+#Rota para remover fornecedores
+@app.route("/forn/del", methods=["DELETE"])
+def remov_forn():
+
+    cnpj=str(request.json["cnpj"])
+
+    for i in fornecedores:
+        if str(i.cnpj) == cnpj:         
+            fornecedores.remove(i)
+            return Response("Removido com sucesso!", 200)
+       
+    return Response("Fornecedor não encontrado.", 404)
+
+
+#Rota para listar livros
+@app.route("/liv")
+def liv():
+    lista = []
+    for f in livros:
+        lista.append (f.to_dict())
+    return jsonify(lista)
+
+
+#Rota para adicionar livros
 @app.route("/liv/add", methods=["POST"])
-def post_pessoa():
-    cod=request.json["cod"]
+def post_liv():
+    cod_exemplar=request.json["cod_exemplar"]
     titulo=request.json["titulo"]
     autor=request.json["autor"]
     sinopse=request.json["sinopse"]
     isbn=request.json["isbn"]
     edicao=request.json["edicao"]
-    cnpj=request.json["cnpj"]
-    valor=request.json["valo"]
-    data=request.json["edicao"]
+    cnpj_fornecedor=request.json["cnpj_fornecedor"]
+    valor=request.json["valor"]
+    data_aquisicao=request.json["data_aquisicao"]
 
-
-    novo_liv = Livro(cod,titulo,autor,sinopse,isbn,edicao,cnpj,valor,data)
+    novo_liv = Livro(cod_exemplar,titulo,autor,sinopse,isbn,edicao,cnpj_fornecedor,valor,data_aquisicao)
     livros.append(novo_liv)
     
-    return "cadastrado com sucesso!"
+    return Response ("cadastrado com sucesso!",201)
 
-@app.route("/liv")
-def liv():
-    lista = ""
-    for f in livros:
-        lista += f"{f}"
-    return f"Esses são os l:{lista}"
 
-'''
-@app.route("/clientes")
+#Rota para remover livros
+@app.route("/liv/del", methods=["DELETE"])
+def remov_livro():
+
+    cod_exemplar=str(request.json["cod_exemplar"])
+
+    for i in livros:
+        if str(i.cod_exemplar) == cod_exemplar:         
+            livros.remove(i)
+            return Response("Removido com sucesso!", 200)
+       
+    return Response("livro não encontrado.", 404)
+
+
+#Rota para listar clientes
+@app.route("/cli")
 def cli():
-    return jsonify(clientes)
+    lista = []
+    for f in clientes:
+        lista.append (f.to_dict())
+    return jsonify(lista)
 
-@app.route("/generos")
-def gen():
-    return jsonify (generos)
 
-@app.route("/emprestimos")
+#Rota para adicionar clientes
+@app.route("/cli/add", methods=["POST"])
+def post_cli():
+    cpf=request.json["cpf"]
+    nome_completo=request.json["nome_completo"]
+    nome_usuario=request.json["nome_usuario"]
+    data_nasc=request.json["data_nasc"]
+    endereco=request.json["endereco"]
+    email=request.json["email"]
+    senha=request.json["senha"]
+
+    novo_cli = UsuarioCliente(cpf,nome_completo,nome_usuario,data_nasc,endereco,email,senha)
+    clientes.append(novo_cli)
+    
+    return Response ("cadastrado com sucesso!",201)
+
+
+#Rota para remover clientes
+@app.route("/cli/del", methods=["DELETE"])
+def remov_cli():
+
+    cpf=str(request.json["cpf"])
+
+    for i in clientes:
+        if str(i.cpf) == cpf:         
+            clientes.remove(i)
+            return Response("Removido com sucesso!", 200)
+       
+    return Response("Usuário não encontrado.", 404)
+
+
+#Rota para listar emprestimos
+@app.route("/emp")
 def emp():
-   return jsonify(emprestimos)
-'''
-
-# adm1 = UsuarioAdm("123.456.789-00", "João da Silva", "João_Open", "23/04/2000", "Rua Santa Catarina, Garopaba", "joaodasilva@gmail.com", "joao@1234")
-# adm2 = UsuarioAdm("123.456.789-01", "José da Silva", "José_Open", "23/04/2000", "Rua Santa Catarina, Garopaba", "josédasilva@gmail.com", "josé@1234")
-
-# administradores.append(adm1)
-# administradores.append(adm2)
-# adm_junto = adm1,adm2
-
-# while True:
-#     print("1.cadastrar \n 0.sair")
-#     opc = int(input("escolha a opcao"))
-#     if opc ==1:
-#         adms=input("digite um nome")
-#         administradores.append(adms)
-#         adm_junto = adm_junto, adms
-#     else:
-#         break
-
-# cliente1 = UsuarioCliente("234.456.678-99", "Bea Rosa", "beatriz", "02/05/2008", "Garopaba", "beatriz@ifsc", "beatriz1234")
-# clientes.append(cliente1)
-# print(clientes)
-
-# livro1 = Livro(1, "O Pequeno Príncipe", "Antoine de Saint-Exupéry", "Uma história mágica", "978-85-99901-09-0", 1, "11.111.111/0001-11", 25.50, "01/01/2024")
-# livros.append(livro1)
-# print(livros)
+    lista = []
+    for f in emprestimos:
+        lista.append (f.to_dict())
+    return jsonify(lista)
 
 
-# genero1 = Genero(1, "Fantasia")
-# generos.append(genero1)
-# print(generos)
+#Rota para adicionar emprestimos
+@app.route("/emp/add", methods=["POST"])
+def post_emp():
+    id=request.json["id"]
+    cpf_cliente=request.json["cpf_cliente"]
+    cod_exemplar=request.json["cod_exemplar"]
+    data_emp=request.json["data_emp"]
+    data_dev=request.json["data_dev"]
+    
 
-# fornecedor1 = Fornecedor ("ltda", "12345678912435", "48 9966-6017", "fornecedor@gmail")
-# fornecedores.append (fornecedor1)
-# print(fornecedores)
+    novo_emp = Emprestimo(id,cpf_cliente,cod_exemplar,data_emp, data_dev)
+    emprestimos.append(novo_emp)
+    
+    return Response ("cadastrado com sucesso!",201)
 
-# emprestimo1 = Emprestimo ("01", "111.111.111-11", "67", "25/03/2026","25/04/2026")
-# emprestimos.append (emprestimo1)
-# print(emprestimos)
 
+#Rota para remover emprestimos
+@app.route("/emp/del", methods=["DELETE"])
+def del_emp():
+
+    id=str(request.json["id"])
+
+    for i in emprestimos:
+        if str(i.id) == id:         
+            emprestimos.remove(i)
+            return Response("Removido com sucesso!", 200)
+       
+    return Response("Emprestimo não encontrado.", 404)
+
+#Rota para devolver emprestimo
+@app.route("/emp/dev", methods=["PATCH"])
+def dev_emp():
+
+    id = str(request.json["id"])
+    for i in emprestimos:
+        if str(i.id) == id:
+            i.devolver()
+            return Response("Livro devolvido com sucesso!", 200)
+        
+    return Response("Emprestimo não encontrado.", 404)
+
+#Rota para listar generos
+@app.route("/gen")
+def gen():
+    lista = []
+    for f in generos:
+        lista.append (f.to_dict())
+    return jsonify(lista)
+
+
+#Rota para adicionar generos
+@app.route("/gen/add", methods=["POST"])
+def post_gen():
+    cod_genero=request.json["cod_genero"]
+    nome=request.json["nome"]
+   
+    novo_gen = Genero(cod_genero,nome)
+    generos.append(novo_gen)
+    
+    return Response ("cadastrado com sucesso!",201)
+
+
+#Rota para remover generos
+@app.route("/gen/del", methods=["DELETE"])
+def remov_gen():
+
+    cod_genero=str(request.json["cod_genero"])
+
+    for i in generos:
+        if str(i.cod_genero) == cod_genero:         
+            generos.remove(i)
+            return Response("Removido com sucesso!", 200)
+
+    return Response("Genero não encontrado.", 404)
 
 app.run()
 
+
+# Json para adm:
+# {
+#    "cpf":1234,
+#    "nome_completo":"joao",
+#    "nome_usuario": "joazinho",
+#    "data_nasc": "01/01/2001",
+#    "endereco":"casa",
+#    "email":"joao@gmail",
+#    "senha":1234
+# }
+
+# Json para livro:
+# {
+#     "cod_exemplar": 1,
+#     "titulo": "O Pequeno Príncipe",
+#     "autor": "Antoine de Saint-Exupéry",
+#     "sinopse": "Um piloto que sofre uma pane...",
+#     "isbn": 101012001,
+#     "edicao": 2007,
+#     "cnpj_fornecedor": 2222222222,
+#     "valor": 25,
+#     "data_aquisicao": "23/08/2025"
+# }
+
+
+# Json para cliente:
+# {
+#     "cpf": 4444,
+#     "nome_completo":"Fulano",
+#     "nome_usuario":"Fulaninho",
+#     "data_nasc": "01/01/2001",
+#     "endereco":"predio",
+#     "email":"fulano@gmail",
+#     "senha": 123456
+# }
+
+# Json para emprestimo:
+# {
+#     "id": 1,
+#     "cpf_cliente": 4444,
+#     "cod_exemplar": 1,
+#     "data_emp": "01/01/2026",
+#     "data_dev": "10/01/2026",
+#     "devolvido": false
+# }
+
+# Json para genero:
+# {
+#     "cod_genero": 123,
+#     "nome": "fantasia"
+# }
+
+#Json para fornecedor:
+#{
+#     "razao_social": "exportadora xyz",
+#     "cnpj": 12345,
+#     "telefone": 4899999,
+#     "email": "exportadora@gmail"
+#}
